@@ -1,21 +1,21 @@
 ---
 - include_tasks: certs.yml
 
-- name: Calico Master | oc adm policy add-scc-to-user privileged system:serviceaccount:kube-system:calico-node
+- name: Calico | oc adm policy add-scc-to-user privileged system:serviceaccount:kube-system:calico-node
   oc_adm_policy_user:
     user: system:serviceaccount:kube-system:calico-node
     resource_kind: scc
     resource_name: privileged
     state: present
 
-- name: Calico Master | oc adm policy add-scc-to-user privileged system:serviceaccount:kube-system:calico-kube-controllers
+- name: Calico | oc adm policy add-scc-to-user privileged system:serviceaccount:kube-system:calico-kube-controllers
   oc_adm_policy_user:
     user: system:serviceaccount:kube-system:calico-kube-controllers
     resource_kind: scc
     resource_name: privileged
     state: present
 
-- name: Calico Master | oc adm policy add-scc-to-user privileged system:serviceaccount:kube-system:calico-upgrade-job
+- name: Calico | oc adm policy add-scc-to-user privileged system:serviceaccount:kube-system:calico-upgrade-job
   oc_adm_policy_user:
     user: system:serviceaccount:kube-system:calico-upgrade-job
     resource_kind: scc
@@ -28,12 +28,12 @@
     --config={{ openshift.common.config_base }}/master/admin.kubeconfig
     annotate  ns kube-system openshift.io/node-selector="" --overwrite
 
-- name: Calico Master | Create temp directory
+- name: Calico | Create temp directory
   command: mktemp -d /tmp/openshift-ansible-XXXXXXX
   register: mktemp
   changed_when: False
 
-- name: Calico Master | Parse node version
+- name: Calico | Parse node version
   set_fact:
     node_version: "{{ calico_node_image | regex_replace('^.*node:v?(.*)$', '\\1') }}"
     cnx: "{{ calico_node_image | regex_replace('[^-]*', '\\0') }}"
@@ -41,13 +41,13 @@
 - name: Prepull Images
   command: "{{ openshift_container_cli }} pull {{ calico_node_image }}"
 
-- name: Calico Master | Write Calico v3
+- name: Calico | Write Calico v3
   template:
     dest: "{{ mktemp.stdout }}/calico.yml"
     src: calicov3.yml.j2
   when: (node_version | regex_search('^[0-9]\.[0-9]\.[0-9]') and node_version >= '3.0.0') or (node_version == 'master') or (cnx == "cnx" and node_version >= '2.0.0')
 
-- name: Calico Master | Launch Calico
+- name: Calico | Launch Calico
   command: >
     {{ openshift_client_binary }} apply
     -f {{ mktemp.stdout }}/calico.yml
@@ -56,7 +56,7 @@
   failed_when: "('already exists' not in calico_create_output.stderr) and ('created' not in calico_create_output.stdout) and calico_create_output.rc != 0"
   changed_when: ('created' in calico_create_output.stdout)
 
-- name: Calico Master | Delete temp directory
+- name: Calico | Delete temp directory
   file:
     name: "{{ mktemp.stdout }}"
     state: absent
